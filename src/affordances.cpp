@@ -96,6 +96,7 @@ bool Affordances::isPointInWorkspace(double x, double y, double z, tf::StampedTr
 {
   if (transform != NULL)
   {
+    //std::cout << "First transform" << std::endl;
     tf::Vector3 v(x, y, z);
     tf::Vector3 tf_v = (*transform) * v;
     x = tf_v.getX();
@@ -105,10 +106,15 @@ bool Affordances::isPointInWorkspace(double x, double y, double z, tf::StampedTr
 
   WorkspaceLimits limits = this->workspace_limits;
 
-  if (x >= limits.min_x && x <= limits.max_x && y >= limits.min_y && y <= limits.max_y && z >= limits.min_z
-      && z <= limits.max_z)
+  if (x >= limits.min_x && x <= limits.max_x &&
+      y >= limits.min_y && y <= limits.max_y &&
+      z >= limits.min_z && z <= limits.max_z)
   {
     return true;
+  }
+  {
+    //std::cout << "x: " << x << ", limits.min_x: " << limits.min_x << std::endl;
+    //std::cout << "x: " << x << ", limits.max_x: " << limits.max_x << std::endl;
   }
 
   return false;
@@ -305,14 +311,18 @@ std::vector<CylindricalShell> Affordances::searchAffordancesNormalsOrPCA(const P
       // sample random point from the point cloud
       int r = std::rand() % cloud->points.size();
 
-      while (!pcl::isFinite((*cloud)[r]) || !this->isPointInWorkspace((*cloud)[r].x, (*cloud)[r].y, (*cloud)[r].z))
+      while (!pcl::isFinite((*cloud)[r]) ||
+             !this->isPointInWorkspace((*cloud)[r].x, (*cloud)[r].y, (*cloud)[r].z))
         r = std::rand() % cloud->points.size();
 
       // estimate cylinder curvature axis and normal
       if (tree.radiusSearch((*cloud)[r], this->NEIGHBOR_RADIUS, nn_indices, nn_dists) > 0)
       {
         if (this->curvature_estimator == NORMALS)
-          this->estimateCurvatureAxisNormals(cloud_normals, nn_indices, curvature_axes[i], normals[i]);
+          this->estimateCurvatureAxisNormals(cloud_normals,
+                                             nn_indices,
+                                             curvature_axes[i],
+                                             normals[i]);
         else if (this->curvature_estimator == PCA)
           this->estimateCurvatureAxisPCA(cloud, r, nn_indices, curvature_axes[i], normals[i]);
 
@@ -411,6 +421,8 @@ std::vector<CylindricalShell> Affordances::searchAffordancesTaubin(const PointCl
   // set input source
   estimator.setInputCloud(cloud);
 
+  std::cout << "Taubin cloud size: " << cloud->points.size() << std::endl;
+
   // set radius search
   estimator.setRadiusSearch(this->NEIGHBOR_RADIUS);
 
@@ -418,6 +430,7 @@ std::vector<CylindricalShell> Affordances::searchAffordancesTaubin(const PointCl
   estimator.setNumSamples(this->num_samples);
 
   // provide a set of neighborhood centroids
+  std::cout << "num_samples: " << num_samples << std::endl;
   std::vector<int> indices(this->num_samples);
   std::srand(std::time(0)); // use current time as seed for random generator
   int k;
@@ -425,8 +438,12 @@ std::vector<CylindricalShell> Affordances::searchAffordancesTaubin(const PointCl
   {
     int r = std::rand() % cloud->points.size();
     k = 0;
+    
     while (!pcl::isFinite((*cloud)[r])
-        || !this->isPointInWorkspace(cloud->points[r].x, cloud->points[r].y, cloud->points[r].z, transform))
+        || !this->isPointInWorkspace(cloud->points[r].x,
+                                     cloud->points[r].y,
+                                     cloud->points[r].z,
+                                     transform))
     {
       r = std::rand() % cloud->points.size();
       k++;
@@ -440,6 +457,7 @@ std::vector<CylindricalShell> Affordances::searchAffordancesTaubin(const PointCl
     }
     indices[i] = r;
   }
+  std::cout << "indices size: " << indices.size() <<std::endl;
   boost::shared_ptr<std::vector<int> > indices_ptr(new std::vector<int>(indices));
   estimator.setIndices(indices_ptr);
 

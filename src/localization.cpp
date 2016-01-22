@@ -26,8 +26,14 @@
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
-const std::string RANGE_SENSOR_FRAME = "/kinect_l_rgb_optical_frame";
-const std::string RANGE_SENSOR_TOPIC = "/kinect_l/depth_registered/points";
+//const std::string RANGE_SENSOR_FRAME = "camera_rgb_optical_frame";
+//const std::string RANGE_SENSOR_TOPIC = "/camera/depth_registered/points";
+//const std::string ROBOT_FRAME = "camera_rgb_optical_frame";
+
+const std::string ROBOT_FRAME = "/multisense/left_camera_optical_frame";
+const std::string RANGE_SENSOR_FRAME = "/multisense/left_camera_optical_frame";
+//const std::string RANGE_SENSOR_TOPIC = "/multisense/organized_image_points2_color";
+const std::string RANGE_SENSOR_TOPIC = "/filtered_stereo_cloud";
 
 // input and output ROS topic data
 PointCloud::Ptr g_cloud(new PointCloud);
@@ -59,11 +65,12 @@ void chatterCallback(const sensor_msgs::PointCloud2ConstPtr& input)
   // convert ROS sensor message to PCL point cloud
   PointCloud::Ptr cloud(new PointCloud);
   pcl::fromROSMsg(*input, *cloud);
+  std::cout << "Cloud Size: " << cloud->points.size() << std::endl;
   g_has_read = true;
 
   // organize point cloud for Organized Nearest Neighbors Search
-  g_cloud->width = 640;
-  g_cloud->height = 480;
+  g_cloud->width = cloud->width;
+  g_cloud->height = cloud->height;
   g_cloud->points.resize(g_cloud->width * g_cloud->height);
   for (int i = 0; i < g_cloud->height; i++)
   {
@@ -73,6 +80,7 @@ void chatterCallback(const sensor_msgs::PointCloud2ConstPtr& input)
     }
   }
 
+  std::cout << "g_cloud Size: " << g_cloud->points.size() << std::endl;
   // store data to file
   //~ pcl::PointCloud<pcl::PointXYZRGB>::Ptr stored_cloud;
   //~ pcl::fromROSMsg(*input, *stored_cloud);
@@ -108,7 +116,7 @@ int main(int argc, char** argv)
   srand (time(NULL));
 
   // initialize ROS
-ros  ::init(argc, argv, "localization");
+  ros::init(argc, argv, "localization");
   ros::NodeHandle node("~");
 
   // set point cloud source from launch file
@@ -159,10 +167,10 @@ ros  ::init(argc, argv, "localization");
   // point cloud read from sensor
   else if (point_cloud_source == SENSOR)
   {
-    // wait for and then lookup transform between camera frame and base frame
+    // wait for and then lookup transform between camera frame and robot frame
     tf::TransformListener transform_listener;
-    transform_listener.waitForTransform(RANGE_SENSOR_FRAME, "base", ros::Time(0), ros::Duration(3));
-    transform_listener.lookupTransform("base", RANGE_SENSOR_FRAME, ros::Time(0), g_transform);
+    transform_listener.waitForTransform(RANGE_SENSOR_FRAME, ROBOT_FRAME, ros::Time(0), ros::Duration(3));
+    transform_listener.lookupTransform(ROBOT_FRAME, RANGE_SENSOR_FRAME, ros::Time(0), g_transform);
 
     // create subscriber for camera topic
     printf("Reading point cloud data from sensor topic: %s\n", RANGE_SENSOR_TOPIC.c_str());

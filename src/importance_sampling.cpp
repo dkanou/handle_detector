@@ -29,7 +29,7 @@
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
 
-const std::string RANGE_SENSOR_FRAME = "/camera_rgb_optical_frame";
+const std::string RANGE_SENSOR_FRAME = "camera_rgb_optical_frame";
 const std::string RANGE_SENSOR_TOPIC = "/camera/depth_registered/points";
 //~ const std::string RANGE_SENSOR_TOPIC = "/head_camera/depth/points"; // simulated Kinect
 
