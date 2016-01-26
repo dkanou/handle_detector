@@ -67,6 +67,46 @@ MarkerArray Visualizer::createCylinders(const std::vector<CylindricalShell> &lis
   return marker_array;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+geometry_msgs::PoseArray
+Visualizer::getCylindersPoses (const std::vector<CylindricalShell> &list,
+                               const std::string &frame)
+{
+  // create and resize a marker array message
+  geometry_msgs::PoseArray cylinder_pose_array_msg;
+  cylinder_pose_array_msg.header.stamp = ros::Time::now();
+  cylinder_pose_array_msg.header.frame_id = frame;
+
+  for (std::size_t i = 0; i < list.size(); i++)
+  {
+    geometry_msgs::PoseStamped cylinder_pose_msg;
+    cylinder_pose_msg.header.seq = i;
+    cylinder_pose_msg.header.stamp = ros::Time::now();
+    cylinder_pose_msg.header.frame_id = frame;
+
+    Eigen::Vector3d axis = list[i].getCurvatureAxis();
+    Eigen::Vector3d normal = list[i].getNormal();
+    Eigen::Vector3d perp = normal.cross(axis);
+    tf::Matrix3x3 rotation_matrix(perp(0), normal(0), axis(0), perp(1),
+                                  normal(1), axis(1), perp(2), normal(2),
+                                  axis(2));
+    tf::Quaternion quaternion;
+    rotation_matrix.getRotation (quaternion);
+    tf::Stamped<tf::Transform> cylinder_tf_pose (tf::Transform(quaternion),
+                                                 ros::Time::now(),
+                                                 frame);
+    tf::poseStampedTFToMsg(cylinder_tf_pose, cylinder_pose_msg);
+
+    cylinder_pose_msg.pose.position.x = list[i].getCentroid()(0);
+    cylinder_pose_msg.pose.position.y = list[i].getCentroid()(1);
+    cylinder_pose_msg.pose.position.z = list[i].getCentroid()(2);
+
+    cylinder_pose_array_msg.poses.push_back (cylinder_pose_msg.pose);
+  }
+
+  return cylinder_pose_array_msg;
+}
+
 MarkerArray Visualizer::createHandleNumbers(const std::vector<std::vector<CylindricalShell> > &handles,
                                             const std::string &frame)
 {
@@ -133,8 +173,10 @@ MarkerArray Visualizer::createHandleNumbers(const std::vector<std::vector<Cylind
   return marker_array;
 }
 
-void Visualizer::createHandles(const std::vector<std::vector<CylindricalShell> > &handles, const std::string &frame,
-                               std::vector<MarkerArray> &marker_arrays, MarkerArray &all_handle_markers)
+void Visualizer::createHandles(const std::vector<std::vector<CylindricalShell> > &handles,
+                               const std::string &frame,
+                               std::vector<MarkerArray> &marker_arrays,
+                               MarkerArray &all_handle_markers)
 {
   marker_arrays.resize(handles.size());
   std::vector<CylindricalShell> handle_shells;
@@ -148,4 +190,20 @@ void Visualizer::createHandles(const std::vector<std::vector<CylindricalShell> >
   }
 
   all_handle_markers = this->createCylinders(handle_shells, frame);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void Visualizer::getHandlePoses(const std::vector<std::vector<CylindricalShell> > &handles,
+                                const std::string &frame,
+                                geometry_msgs::PoseArray &handle_poses)
+{
+  std::vector<CylindricalShell> handle_shells;
+
+  for (std::size_t i = 0; i < handles.size(); i++)
+  {
+    for (int j = 0; j < handles[i].size(); j++)
+      handle_shells.push_back(handles[i][j]);
+  }
+
+  handle_poses = getCylindersPoses (handle_shells, frame);
 }

@@ -182,16 +182,23 @@ int main(int argc, char** argv)
   Visualizer visualizer(g_update_interval);
   sensor_msgs::PointCloud2 pc2msg;
   PointCloud::Ptr cloud_vis(new PointCloud);
-  ros::Publisher marker_array_pub = node.advertise<visualization_msgs::MarkerArray>("visualization_all_affordances",
-                                                                                    10);
-  ros::Publisher marker_array_pub_handles = node.advertise<visualization_msgs::MarkerArray>("visualization_all_handles",
-                                                                                            10);
-  ros::Publisher marker_array_pub_handle_numbers = node.advertise<visualization_msgs::MarkerArray>(
-      "visualization_handle_numbers", 10);
+  ros::Publisher marker_array_pub =
+    node.advertise<visualization_msgs::MarkerArray>("visualization_all_affordances", 10);
+  ros::Publisher pose_array_pub =
+    node.advertise<geometry_msgs::PoseArray>("all_affordance_poses", 10);
+  ros::Publisher marker_array_pub_handles =
+    node.advertise<visualization_msgs::MarkerArray>("visualization_all_handles", 10);
+  ros::Publisher handle_poses_array_pub =
+    node.advertise<geometry_msgs::PoseArray>("all_handle_poses", 10);
+  ros::Publisher marker_array_pub_handle_numbers =
+    node.advertise<visualization_msgs::MarkerArray>("visualization_handle_numbers", 10);
+
   std::vector<visualization_msgs::MarkerArray> marker_arrays;
   visualization_msgs::MarkerArray marker_array_msg;
   visualization_msgs::MarkerArray marker_array_msg_handles;
   visualization_msgs::MarkerArray marker_array_msg_handle_numbers;
+  geometry_msgs::PoseArray poses_array_msg;
+  geometry_msgs::PoseArray handle_poses_array_msg;
 
   // publication of grasp affordances and handles as ROS topics
   Messages messages;
@@ -217,12 +224,19 @@ int main(int argc, char** argv)
 
       // create cylinder messages for visualization and ROS topic
       marker_array_msg = visualizer.createCylinders(g_cylindrical_shells, range_sensor_frame);
+      poses_array_msg = visualizer.getCylindersPoses (g_cylindrical_shells, range_sensor_frame);
       cylinder_list_msg = messages.createCylinderArray(g_cylindrical_shells, range_sensor_frame);
       ROS_INFO("update visualization");
 
       // create handle messages for visualization and ROS topic
       handle_list_msg = messages.createHandleList(g_handles, range_sensor_frame);
+      int handle_counter=0;
+      for (int i=0; i<g_handles.size(); i++)
+        for (int j=0; j<g_handles[i].size(); j++)
+          handle_counter++;
       visualizer.createHandles(g_handles, range_sensor_frame, marker_arrays, marker_array_msg_handles);
+
+      visualizer.getHandlePoses (g_handles, range_sensor_frame, handle_poses_array_msg);
       handle_pubs.resize(g_handles.size());
       for (std::size_t i = 0; i < handle_pubs.size(); i++)
         handle_pubs[i] = node.advertise<visualization_msgs::MarkerArray>(
@@ -241,6 +255,9 @@ int main(int argc, char** argv)
     pc2msg.header.frame_id = range_sensor_frame;
     pcl_pub.publish(pc2msg);
 
+    // publish cylinders as poses_array_msg
+    pose_array_pub.publish (poses_array_msg);
+
     // publish cylinders for visualization
     marker_array_pub.publish(marker_array_msg);
 
@@ -250,6 +267,9 @@ int main(int argc, char** argv)
 
     // publish handles for visualization
     marker_array_pub_handles.publish(marker_array_msg_handles);
+
+    // publish handles as poses_array_msg
+    handle_poses_array_pub.publish (handle_poses_array_msg);
 
     // publish handle numbers for visualization
     marker_array_pub_handle_numbers.publish(marker_array_msg_handle_numbers);

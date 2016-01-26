@@ -5,12 +5,12 @@
 		<param name="target_radius" value="0.04" />
 		<param name="target_radius_error" value="0.015" />
 		<param name="affordance_gap" value="0.001" />
-		<param name="sample_size" value="10000" />		
+		<param name="sample_size" value="1000" />		
 		<param name="use_clearance_filter" value="false" />
 		<param name="use_occlusion_filter" value="false" />
     <param name="curvature_estimator" value="0" />
 		<param name="point_cloud_source" value="1" />
-		<param name="update_interval" value="600.0" />
+		<param name="update_interval" value="5.0" />
 		
 		<!-- alignment parameters -->
 		<param name="alignment_runs" value="4" />

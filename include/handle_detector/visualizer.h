@@ -35,6 +35,7 @@
 #include <boost/lexical_cast.hpp>
 #include "cylindrical_shell.h"
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -62,6 +63,15 @@ public:
   MarkerArray
   createCylinders(const std::vector<CylindricalShell> &list, const std::string &frame);
 
+  /** \brief Create a geometry PoseArray message from a list of cylindrical
+    * shells.
+    *
+    * \param[in] list the list of cylindrical shells
+    * \param[in] frame the frame in which the shells are located
+    */
+  geometry_msgs::PoseArray
+  getCylindersPoses (const std::vector<CylindricalShell> &list, const std::string &frame);
+
   /** \brief Create a MarkerArray message from a list of cylindrical shells.
    * \param list the list of cylindrical shells
    * \param frame the frame in which the shells are located
@@ -81,6 +91,20 @@ public:
   void
   createHandles(const std::vector<std::vector<CylindricalShell> > &handles, const std::string &frame,
                 std::vector<MarkerArray> &marker_arrays, MarkerArray &all_handle_markers);
+
+  /** \brief Create a list of MarkerArray messages and a PoseArray from a list
+    * of handles.
+    *
+    * \param[in] handles the list of handles
+    * \param[in] frame the frame in which the handles are located
+    *
+    * \param[out] handle_poses the resultant PoseArray message that consists of
+    * all handles
+    */
+  void
+  getHandlePoses (const std::vector<std::vector<CylindricalShell> > &handles,
+                  const std::string &frame,
+                  geometry_msgs::PoseArray &handle_poses);
 
 private:
   double marker_lifetime;
